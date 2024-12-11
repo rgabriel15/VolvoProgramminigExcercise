@@ -1,0 +1,74 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>d64ff402-f5e3-4139-b466-6c527eaa7b14</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>..\..</DockerfileContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="Assets\chassis.json" />
+    <Content Remove="Assets\vehicle.json" />
+    <Content Remove="Assets\vehicleType.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Http" Version="8.1.0" />
+    <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Exceptions.EntityFrameworkCore" Version="8.4.0" />
+    <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.MSSqlServer" Version="8.1.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+  	<InternalsVisibleTo Include="Base.Tests" />
+  	<InternalsVisibleTo Include="User.Tests" />
+	<InternalsVisibleTo Include="VerificationCode.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Logs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Assets\chassis.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Assets\vehicle.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Assets\vehicleType.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Chassis\Chassis.Application\Chassis.Application.csproj" />
+    <ProjectReference Include="..\Chassis\Chassis.Infrastructure\Chassis.Infrastructure.csproj" />
+    <ProjectReference Include="..\ClientException\ClientException.Application\ClientException.Application.csproj" />
+    <ProjectReference Include="..\ClientException\ClientException.Infrastructure\ClientException.Infrastructure.csproj" />
+    <ProjectReference Include="..\VehicleType\VehicleType.Application\VehicleType.Application.csproj" />
+    <ProjectReference Include="..\VehicleType\VehicleType.Infrastructure\VehicleType.Infrastructure.csproj" />
+    <ProjectReference Include="..\Vehicle\Vehicle.Application\Vehicle.Application.csproj" />
+    <ProjectReference Include="..\Vehicle\Vehicle.Infrastructure\Vehicle.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="SonarAnalyzer.CSharp" Version="10.3.0.106239" />
+  </ItemGroup>
+
+</Project>

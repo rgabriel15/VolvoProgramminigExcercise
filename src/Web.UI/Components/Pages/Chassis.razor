@@ -1,0 +1,99 @@
+﻿@page "/chassis"
+@inject StateContainer StateContainer
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject ISnackbar SnkBar
+@inject IChassisService ChassisService
+@inject IHttpContextAccessor HttpContextAccessor
+
+@using System.Diagnostics
+
+<PageTitle>Chassis</PageTitle>
+
+<MudStack Row="true" Class="d-flex flex-grow-1">
+    <MudText Typo="Typo.h3" GutterBottom="true" class="flex-1 d-flex">Chassis</MudText>
+    <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" OnClick="@(() => NavigateToAddPage())" Style="width: 200px; height: 50px;" Class="flex-2 py-1 d-flex">Add</MudButton>
+</MudStack>
+
+@if (StateContainer.Chassis == null)
+{
+    <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+}
+else
+{
+    <MudTable Items="StateContainer.ChassisList" Hover="true" SortLabel="Sort By" Elevation="0" AllowUnsorted="false">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<ChassisModel, object>(x=>x.Id)">Chassis Id</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<ChassisModel, object>(x=>x.ChassisSeries)">Chassis Series</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<ChassisModel, object>(x=>x.ChassisNumber)">Chassis Number</MudTableSortLabel></MudTh>
+            <MudTh>Edit</MudTh>
+            <MudTh>Delete</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Chassis Id">@context.Id</MudTd>
+            <MudTd DataLabel="Chassis Series">@context.ChassisSeries</MudTd>
+            <MudTd DataLabel="Chassis Number">@context.ChassisNumber</MudTd>
+            <MudTd DataLabel="Edit"><MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Inherit" OnClick="@(()=>NavigateToAddPage(context))" /></MudTd>
+            <MudTd DataLabel="Delete"><MudIconButton Icon="@Icons.Material.Filled.DeleteForever" Color="Color.Inherit" OnClick="@(()=>OpenDeleteWarningDialogAsync(context))" /></MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[]{50, 100}" />
+        </PagerContent>
+    </MudTable>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        StateContainer.OnChange -= StateHasChanged;
+        StateContainer.OnChange += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var list = await ChassisService.ListAsync();
+        StateContainer.ChassisList = list.List;
+    }
+
+    private void NavigateToAddPage(ChassisModel? model = null)
+    {
+        StateContainer.Chassis = model ?? new ChassisModel();
+        NavManager.NavigateTo("/chassisAdd");
+    }
+
+    private async Task OpenDeleteWarningDialogAsync(ChassisModel model)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var dialogReference = await DialogService.ShowAsync<DeleteWarningDialog>("Delete?", options);
+        var res = await dialogReference.Result;
+
+        if (res?.Data != null
+            && (bool)res.Data)
+        {
+            await DeleteAsync(model);
+        }
+    }
+
+    private async Task DeleteAsync(ChassisModel model)
+    {
+        var deletedId = await ChassisService.DeleteAsync(model.Id);
+
+        if (deletedId > 0)
+        {
+            SnkBar.Add(message: "Data deleted.", severity: Severity.Success);
+            var list = await ChassisService.ListAsync();
+            StateContainer.ChassisList = list.List;
+            return;
+        }
+
+        SnkBar.Add(message: "Error: Data not deleted.", severity: Severity.Error);
+    }
+}

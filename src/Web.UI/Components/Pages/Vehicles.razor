@@ -1,0 +1,148 @@
+﻿@page "/"
+@inject StateContainer StateContainer
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject ISnackbar SnkBar;
+@inject IHttpContextAccessor HttpContextAccessor;
+@inject IChassisService ChassisService;
+@inject IVehicleTypeService VehicleTypeService;
+@inject IVehicleService VehicleService;
+
+@using System.Diagnostics
+
+<PageTitle>Vehicles</PageTitle>
+
+<MudStack Row="true" Class="d-flex flex-grow-1">
+    <MudText Typo="Typo.h3" GutterBottom="true" class="flex-1 d-flex">Vehicles</MudText>
+
+    <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" OnClick="@(() => NavigateToAddPage())" Style="width: 200px; height: 50px;" Class="flex-2 py-1 d-flex">Add</MudButton>
+</MudStack>
+
+<MudTextField @bind-Value="chassisIdFilter" Label="Chassis Id Filter" Variant="Variant.Filled" 
+Class="flex-1" OnKeyDown="OnFilterChanged" Immediate="true"
+Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.FilterAlt" />
+
+<br />
+
+@if (StateContainer.Vehicles == null)
+{
+    <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+}
+else
+{
+    <MudTable Items="filteredVehicles" Hover="true" SortLabel="Sort By" Elevation="0" AllowUnsorted="false">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<VehicleModel, object>(x=>x.ChassisId)">Chassis Id</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<VehicleModel, object>(x=>x.Chassis?.ChassisSeries ?? string.Empty)">Chassis Series</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<VehicleModel, object>(x=>x.Chassis?.ChassisNumber ?? 0)">Chassis Number</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<VehicleModel, object>(x=>x.VehicleTypeId)">Vehicle Type Id</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<VehicleModel, object>(x=>x.VehicleType?.Name ?? string.Empty)">Vehicle Type</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<VehicleModel, object>(x=>x.VehicleType?.NumberOfPassengers ?? 0)">Number of Passengers</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<VehicleModel, object>(x=>x.Color)">Color</MudTableSortLabel></MudTh>
+            <MudTh>Edit</MudTh>
+            <MudTh>Delete</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Chassis Id">@context.ChassisId</MudTd>
+            <MudTd DataLabel="Chassis Series">@context.Chassis?.ChassisSeries</MudTd>
+            <MudTd DataLabel="Chassis Number">@context.Chassis?.ChassisNumber</MudTd>
+            <MudTd DataLabel="Vehicle Type Id">@context.VehicleTypeId</MudTd>
+            <MudTd DataLabel="Vehicle Type">@context.VehicleType?.Name</MudTd>
+            <MudTd DataLabel="Number of Passengers">@context.VehicleType?.NumberOfPassengers</MudTd>
+            <MudTd DataLabel="Color">@context.Color</MudTd>
+            <MudTd DataLabel="Edit"><MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Inherit" OnClick="@(()=>NavigateToAddPage(context))" /></MudTd>
+            <MudTd DataLabel="Delete"><MudIconButton Icon="@Icons.Material.Filled.DeleteForever" Color="Color.Inherit" OnClick="@(()=>OpenDeleteWarningDialogAsync(context))" /></MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[]{50, 100}" />
+        </PagerContent>
+    </MudTable>
+}
+
+@code {
+    private string chassisIdFilter = string.Empty;
+    private IReadOnlyCollection<VehicleModel> filteredVehicles => FilterVehicles();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        StateContainer.OnChange -= StateHasChanged;
+        StateContainer.OnChange += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var chassis = await ChassisService.ListAsync();
+        StateContainer.ChassisList = chassis.List;
+
+        var vehicleTypes = await VehicleTypeService.ListAsync();
+        StateContainer.VehicleTypes = vehicleTypes.List;
+
+        var vehicles = await VehicleService.ListAsync();
+        StateContainer.Vehicles = vehicles.List;
+    }
+
+    private void NavigateToAddPage(VehicleModel? model = null)
+    {
+        StateContainer.Vehicle = model ?? new VehicleModel();
+        NavManager.NavigateTo("/vehicleAdd");
+    }
+
+    private async Task OpenDeleteWarningDialogAsync(VehicleModel model)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var dialogReference = await DialogService.ShowAsync<DeleteWarningDialog>("Delete?", options);
+        var res = await dialogReference.Result;
+        
+        if (res?.Data != null
+            && (bool)res.Data)
+        {
+            await DeleteAsync(model);
+        }
+    }
+
+    private async Task DeleteAsync(VehicleModel model)
+    {
+        var deletedId = await VehicleService.DeleteAsync(model.Id);
+
+        if (deletedId > 0)
+        {
+            SnkBar.Add(message: "Data deleted.", severity: Severity.Success);
+            var list = await VehicleService.ListAsync();
+            StateContainer.Vehicles = list.List;
+            return;
+        }
+
+        SnkBar.Add(message: "Error: Data not deleted.", severity: Severity.Error);
+    }
+
+    private IReadOnlyCollection<VehicleModel> FilterVehicles()
+    {
+        if (string.IsNullOrEmpty(chassisIdFilter))
+        {
+            return StateContainer.Vehicles;
+        }
+
+        if (uint.TryParse(chassisIdFilter, out var chassisId))
+        {
+            return StateContainer
+                .Vehicles
+                .Where(x => x.ChassisId == chassisId)
+                .ToList();
+        }
+
+        return [];
+    }
+
+    private void OnFilterChanged(KeyboardEventArgs e)
+    {
+        StateHasChanged();
+    }
+}

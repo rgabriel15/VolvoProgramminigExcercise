@@ -1,0 +1,78 @@
+﻿@page "/chassisAdd"
+@inject StateContainer StateContainer
+@inject NavigationManager NavManager
+@inject ISnackbar SnkBar
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IClientExceptionService ClientExceptionService
+@inject IChassisService ChassisService
+
+<PageTitle>@PageTitle</PageTitle>
+
+<MudStack Direction="Column" Spacing="10" Class="d-flex" AlignItems="AlignItems.Start">
+    <MudText Typo="Typo.h3" GutterBottom="true">@PageTitle</MudText>
+
+    <MudTextField @bind-Value="StateContainer.Chassis.ChassisSeries" Label="Chassis Series" Variant="Variant.Filled" Required="true" Style="width: 500px;" />
+
+    <MudNumericField T="uint" @bind-Value="StateContainer.Chassis.ChassisNumber" Label="Chassis Number" Variant="Variant.Filled" Required="true" Step="1" Min="1" Max="@uint.MaxValue" />
+
+    <MudButton StartIcon="@Icons.Material.Filled.Save" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" OnClick="SaveAsync" Disabled="@saveButtonIsDisabled" Style="width: 200px; height: 50px;">Save</MudButton>
+
+    @if (saveButtonIsDisabled)
+    {
+        <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+    }
+</MudStack>
+
+@code {
+    private bool saveButtonIsDisabled = false;
+
+    private string PageTitle => StateContainer.Chassis.Id > 0 ? "Edit Chassis" : "Add Chassis";
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            saveButtonIsDisabled = true;
+
+            if (string.IsNullOrWhiteSpace(StateContainer.Chassis.ChassisSeries)
+                || StateContainer.Chassis.ChassisNumber < 1)
+            {
+                SnkBar.Add(message: "Please fill in all fields.", severity: Severity.Error);
+                return;
+            }
+
+            var model = new ChassisModel();
+
+            if (StateContainer.Chassis.Id < 1)
+            {
+                model = await ChassisService.AddAsync(StateContainer.Chassis);
+            }
+            else
+            {
+                model = await ChassisService.UpdateAsync(StateContainer.Chassis);
+            }
+
+            if (model.Id > 0)
+            {
+                NavManager.NavigateTo("/chassis");
+                SnkBar.Add(message: "Data saved.", severity: Severity.Success);
+                return;
+            }
+
+            SnkBar.Add(message: "Error: data not saved.", severity: Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            SnkBar.Add($"Error: {ex.Message}", Severity.Error);
+            _ = ClientExceptionService.AddAsync(new ClientExceptionModel
+                {
+                    ErrorMessage = ex.Message,
+                    StackTrace = ex.StackTrace ?? string.Empty,
+                });
+        }
+        finally
+        {
+            saveButtonIsDisabled = false;
+        }
+    }
+}

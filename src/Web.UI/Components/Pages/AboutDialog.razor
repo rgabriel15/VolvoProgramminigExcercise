@@ -1,0 +1,20 @@
+﻿<MudDialog>
+    <TitleContent>
+        About
+    </TitleContent>
+    <DialogContent>
+        Eng. Rodrigo Gabriel
+        <br/>2024
+        <br/>rodrigo@cybercog.com.br
+        <br />https://www.linkedin.com/in/roga
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Submit">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = new();
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+}

@@ -1,0 +1,127 @@
+﻿@page "/vehicleAdd"
+@inject StateContainer StateContainer
+@inject NavigationManager NavManager
+@inject ISnackbar SnkBar
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IClientExceptionService ClientExceptionService
+@inject IVehicleService VehicleService
+
+<PageTitle>@PageTitle</PageTitle>
+
+<MudStack Direction="Column" Spacing="10" Class="d-flex" AlignItems="AlignItems.Start">
+    <MudText Typo="Typo.h3" GutterBottom="true">@PageTitle</MudText>
+
+    @*     <MudNumericField T="ulong"
+        @bind-Value="StateContainer.Vehicle.ChassisId"
+        Label="Chassis Id"
+        Variant="Variant.Filled"
+        Required="true"
+        Step="1"
+        Min="1"
+        Max="@byte.MaxValue"
+        Disabled="@ChassisIdIsDisabled" /> *@
+
+    <MudStack Style="width: 600px">
+        <MudSelect T="ulong"
+        @bind-Value="StateContainer.Vehicle.ChassisId"
+        Variant="Variant.Filled"
+        Label="Chassis"
+        Margin="Margin.None"
+        Dense="false"
+        Required="true"
+        Disabled="@ChassisIdIsDisabled">
+            <MudSelectItem T="ulong" Value="0">Select</MudSelectItem>
+
+            @foreach (var chassis in StateContainer.ChassisList)
+            {
+                <MudSelectItem T="ulong" Value="chassis.Id">@chassis.ChassisIdAndSeriesAndNumber</MudSelectItem>
+            }
+        </MudSelect>
+    </MudStack>
+
+    <MudStack Style="width: 600px">
+        <MudSelect T="ulong"
+        @bind-Value="StateContainer.Vehicle.VehicleTypeId"
+        Variant="Variant.Filled"
+        Label="Vehicle Type"
+        Margin="Margin.None"
+        Dense="false"
+        Required="true"
+        Disabled="@ChassisIdIsDisabled">
+            <MudSelectItem T="ulong" Value="0">Select</MudSelectItem>
+
+            @foreach (var vehicleType in StateContainer.VehicleTypes)
+            {
+                <MudSelectItem T="ulong" Value="vehicleType.Id">@vehicleType.Name</MudSelectItem>
+            }
+        </MudSelect>
+    </MudStack>
+
+    <MudTextField @bind-Value="StateContainer.Vehicle.Color" Label="Color" Variant="Variant.Filled" Required="true" Style="width: 600px;" />
+
+    <MudButton StartIcon="@Icons.Material.Filled.Save" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" OnClick="SaveAsync" Disabled="@saveButtonIsDisabled" Style="width: 200px; height: 50px;">Save</MudButton>
+
+    @if (saveButtonIsDisabled)
+    {
+        <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+    }
+</MudStack>
+
+@code {
+    private bool saveButtonIsDisabled = false;
+
+    private string PageTitle => StateContainer.Vehicle.Id > 0 ? "Edit Vehicle" : "Add Vehicle";
+    private bool ChassisIdIsDisabled => IsVehicleCreated();
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            saveButtonIsDisabled = true;
+
+            if (StateContainer.Vehicle.ChassisId < 1
+                || StateContainer.Vehicle.VehicleTypeId < 1
+                || string.IsNullOrWhiteSpace(StateContainer.Vehicle.Color))
+            {
+                SnkBar.Add(message: "Please fill in all fields.", severity: Severity.Error);
+                return;
+            }
+
+            var vehicle = StateContainer.Vehicle;
+            StateContainer.Vehicle = StateContainer.Vehicle.Id < 1
+                ? await VehicleService.AddAsync(StateContainer.Vehicle)
+                : await VehicleService.UpdateAsync(StateContainer.Vehicle);
+
+            if (IsVehicleCreated())
+            {
+                NavManager.NavigateTo("/");
+                SnkBar.Add(message: "Data saved.", severity: Severity.Success);
+                return;
+            }
+
+            StateContainer.Vehicle = vehicle;
+            SnkBar.Add(message: "Error: data not saved.", severity: Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            SnkBar.Add($"Error: {ex.Message}", Severity.Error);
+            _ = ClientExceptionService.AddAsync(new ClientExceptionModel
+            {
+                ErrorMessage = ex.Message,
+                StackTrace = ex.StackTrace ?? string.Empty,
+            });
+        }
+        finally
+        {
+            saveButtonIsDisabled = false;
+        }
+    }
+
+    private bool IsVehicleCreated()
+    {
+        // Due to the absence of constraints in EF InMemory DB.
+        return StateContainer.Vehicle.Id > 0
+            && StateContainer.ChassisList.Any(x => x.Id == StateContainer.Vehicle.ChassisId)
+            && StateContainer.VehicleTypes.Any(x => x.Id == StateContainer.Vehicle.VehicleTypeId);
+    }
+}

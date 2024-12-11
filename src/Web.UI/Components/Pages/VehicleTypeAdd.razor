@@ -1,0 +1,78 @@
+﻿@page "/vehicleTypeAdd"
+@inject StateContainer StateContainer
+@inject NavigationManager NavManager
+@inject ISnackbar SnkBar
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IClientExceptionService ClientExceptionService
+@inject IVehicleTypeService VehicleTypeService
+
+<PageTitle>@PageTitle</PageTitle>
+
+<MudStack Direction="Column" Spacing="10" Class="d-flex" AlignItems="AlignItems.Start">
+    <MudText Typo="Typo.h3" GutterBottom="true">@PageTitle</MudText>
+
+    <MudTextField @bind-Value="StateContainer.VehicleType.Name" Label="Vehicle Name" Variant="Variant.Filled" Required="true" Style="width: 500px;" />
+
+    <MudNumericField T="byte" @bind-Value="StateContainer.VehicleType.NumberOfPassengers" Label="Number of Passengers" Variant="Variant.Filled" Required="true" Step="1" Min="1" Max="@byte.MaxValue" />
+
+    <MudButton StartIcon="@Icons.Material.Filled.Save" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" OnClick="SaveAsync" Disabled="@saveButtonIsDisabled" Style="width: 200px; height: 50px;">Save</MudButton>
+
+    @if (saveButtonIsDisabled)
+    {
+        <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+    }
+</MudStack>
+
+@code {
+    private bool saveButtonIsDisabled = false;
+
+    private string PageTitle => StateContainer.VehicleType.Id > 0 ? "Edit Vehicle Type" : "Add Vehicle Type";
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            saveButtonIsDisabled = true;
+
+            if (string.IsNullOrWhiteSpace(StateContainer.VehicleType.Name)
+                || StateContainer.VehicleType.NumberOfPassengers < 1)
+            {
+                SnkBar.Add(message: "Please fill in all fields.", severity: Severity.Error);
+                return;
+            }
+
+            var model = new VehicleTypeModel();
+
+            if (StateContainer.VehicleType.Id < 1)
+            {
+                model = await VehicleTypeService.AddAsync(StateContainer.VehicleType);
+            }
+            else
+            {
+                model = await VehicleTypeService.UpdateAsync(StateContainer.VehicleType);
+            }
+
+            if (model.Id > 0)
+            {
+                NavManager.NavigateTo("/vehicleTypes");
+                SnkBar.Add(message: "Data saved.", severity: Severity.Success);
+                return;
+            }
+
+            SnkBar.Add(message: "Error: data not saved.", severity: Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            SnkBar.Add($"Error: {ex.Message}", Severity.Error);
+            _ = ClientExceptionService.AddAsync(new ClientExceptionModel
+            {
+                ErrorMessage = ex.Message,
+                StackTrace = ex.StackTrace ?? string.Empty,
+            });
+        }
+        finally
+        {
+            saveButtonIsDisabled = false;
+        }
+    }
+}

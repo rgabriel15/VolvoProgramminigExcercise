@@ -1,0 +1,99 @@
+﻿@page "/vehicleTypes"
+@inject StateContainer StateContainer
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject ISnackbar SnkBar
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IVehicleTypeService VehicleTypeService
+
+@using System.Diagnostics
+
+<PageTitle>Vehicle Types</PageTitle>
+
+<MudStack Row="true" Class="d-flex flex-grow-1">
+    <MudText Typo="Typo.h3" GutterBottom="true" class="flex-1 d-flex">Vehicle Types</MudText>
+    <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="MudBlazor.Color.Primary" OnClick="@(() => NavigateToAddPage())" Style="width: 200px; height: 50px;" Class="flex-2 py-1 d-flex">Add</MudButton>
+</MudStack>
+
+@if (StateContainer.VehicleTypes == null)
+{
+    <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+}
+else
+{
+    <MudTable Items="StateContainer.VehicleTypes" Hover="true" SortLabel="Sort By" Elevation="0" AllowUnsorted="false">
+        <HeaderContent>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<VehicleTypeModel, object>(x=>x.Id)">Vehicle Type Id</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<VehicleTypeModel, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel InitialDirection="SortDirection.Ascending" SortBy="new Func<VehicleTypeModel, object>(x=>x.NumberOfPassengers)">Number of Passengers</MudTableSortLabel></MudTh>
+            <MudTh>Edit</MudTh>
+            <MudTh>Delete</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Vehicle Type Id">@context.Id</MudTd>
+            <MudTd DataLabel="Name">@context.Name</MudTd>
+            <MudTd DataLabel="Number of Passengers">@context.NumberOfPassengers</MudTd>
+            <MudTd DataLabel="Edit"><MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Inherit" OnClick="@(()=>NavigateToAddPage(context))" /></MudTd>
+            <MudTd DataLabel="Delete"><MudIconButton Icon="@Icons.Material.Filled.DeleteForever" Color="Color.Inherit" OnClick="@(()=>OpenDeleteWarningDialogAsync(context))" /></MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[]{50, 100}" />
+        </PagerContent>
+    </MudTable>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        StateContainer.OnChange -= StateHasChanged;
+        StateContainer.OnChange += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var list = await VehicleTypeService.ListAsync();
+        StateContainer.VehicleTypes = list.List;
+    }
+
+    private void NavigateToAddPage(VehicleTypeModel? model = null)
+    {
+        StateContainer.VehicleType = model ?? new VehicleTypeModel();
+        NavManager.NavigateTo("/vehicleTypeAdd");
+    }
+
+    private async Task OpenDeleteWarningDialogAsync(VehicleTypeModel model)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var dialogReference = await DialogService.ShowAsync<DeleteWarningDialog>("Delete?", options);
+        var res = await dialogReference.Result;
+
+        if (res?.Data != null
+            && (bool)res.Data)
+        {
+            await DeleteAsync(model);
+        }
+    }
+
+    private async Task DeleteAsync(VehicleTypeModel model)
+    {
+        var deletedId = await VehicleTypeService.DeleteAsync(model.Id);
+
+        if (deletedId > 0)
+        {
+            SnkBar.Add(message: "Data deleted.", severity: Severity.Success);
+            var list = await VehicleTypeService.ListAsync();
+            StateContainer.VehicleTypes = list.List;
+            return;
+        }
+
+        SnkBar.Add(message: "Error: Data not deleted.", severity: Severity.Error);
+    }
+}

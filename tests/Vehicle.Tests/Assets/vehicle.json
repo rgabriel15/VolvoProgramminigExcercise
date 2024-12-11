@@ -1,0 +1,77 @@
+[
+  {
+    "Id": 1,
+    "IsActive": true,
+    "CreationDate": "2024-01-01T00:00:00.000",
+    "UpdateDate": "2024-01-01T00:00:00.000",
+    "ChassisId": 1,
+    "VehicleTypeId": 1,
+    "Color": "Red",
+    "Chassis": {
+      "Id": 1,
+      "IsActive": true,
+      "CreationDate": "2024-01-01T00:00:00.000",
+      "UpdateDate": "2024-01-01T00:00:00.000",
+      "ChassisSeries": "Chassis_Series_1",
+      "ChassisNumber": 100
+    },
+    "VehicleType": {
+      "Id": 1,
+      "IsActive": true,
+      "CreationDate": "2024-01-01T00:00:00.000",
+      "UpdateDate": "2024-01-01T00:00:00.000",
+      "Name": "Bus",
+      "NumberOfPassengers": 42
+    }
+  },
+  {
+    "Id": 2,
+    "IsActive": true,
+    "CreationDate": "2024-01-01T00:00:00.000",
+    "UpdateDate": "2024-01-01T00:00:00.000",
+    "ChassisId": 2,
+    "VehicleTypeId": 2,
+    "Color": "Green",
+    "Chassis": {
+      "Id": 2,
+      "IsActive": true,
+      "CreationDate": "2024-01-01T00:00:00.000",
+      "UpdateDate": "2024-01-01T00:00:00.000",
+      "ChassisSeries": "Chassis_Series_2",
+      "ChassisNumber": 200
+    },
+    "VehicleType": {
+      "Id": 2,
+      "IsActive": true,
+      "CreationDate": "2024-01-01T00:00:00.000",
+      "UpdateDate": "2024-01-01T00:00:00.000",
+      "Name": "Car",
+      "NumberOfPassengers": 4
+    }
+  },
+  {
+    "Id": 3,
+    "IsActive": true,
+    "CreationDate": "2024-01-01T00:00:00.000",
+    "UpdateDate": "2024-01-01T00:00:00.000",
+    "ChassisId": 3,
+    "VehicleTypeId": 3,
+    "Color": "Blue",
+    "Chassis": {
+      "Id": 3,
+      "IsActive": true,
+      "CreationDate": "2024-01-01T00:00:00.000",
+      "UpdateDate": "2024-01-01T00:00:00.000",
+      "ChassisSeries": "Chassis_Series_3",
+      "ChassisNumber": 300
+    },
+    "VehicleType": {
+      "Id": 3,
+      "IsActive": true,
+      "CreationDate": "2024-01-01T00:00:00.000",
+      "UpdateDate": "2024-01-01T00:00:00.000",
+      "Name": "Truck",
+      "NumberOfPassengers": 1
+    }
+  }
+]
